@@ -18,10 +18,4 @@ npm start
 
 
 
-# open 
-   Local:   http://localhost:3001/    
-   Network: http://192.168.1.104:3001/   
-
-
-
 ### Liscense : MIT
