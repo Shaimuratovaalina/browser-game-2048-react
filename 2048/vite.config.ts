@@ -9,19 +9,19 @@ import { VitePWA } from 'vite-plugin-pwa';
 const pwaOptions: Partial<VitePWAOptions> = {
   registerType: 'autoUpdate',
   manifest: {
-    id: '/browser-game-2048-react/',
+    id: '/react-2048/',
     name: 'React 2048',
     short_name: 'React 2048',
     description: 'A React clone of 2048 game',
     theme_color: '#ffffff',
     icons: [
       {
-        src: '/assets/android-192x192.png', // Убедитесь, что файл существует
+        src: '/react-2048/assets/android-chrome-192x192.png',
         sizes: '192x192',
         type: 'image/png',
       },
       {
-        src: '/assets/android-512x512.png', // Убедитесь, что файл существует
+        src: '/react-2048/assets/android-chrome-512x512.png',
         sizes: '512x512',
         type: 'image/png',
       },
@@ -38,7 +38,7 @@ export default defineConfig(({ mode }) => {
   }
 
   return {
-    base: '/browser-game-2048-react/', // ⚠️ Исправлено
+    base: './',
     server: {
       port: 3001,
     },

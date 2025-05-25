@@ -1,28 +1,19 @@
-Этот проект это реализация классической браузерной игры 2048 с использованием React
+## [React-2048](https://kwrush.github.io/react-2048/)
 
-Цели проекта : "Добавление новых функций, таких как достижения, улучшения и настройки" и тд. 
+A React implementation of [2048](https://github.com/gabrielecirulli/2048) built with [Typescript](https://www.typescriptlang.org/) and 💅 [styled-components](https://styled-components.com)
 
+### Demo
 
-## моя ссылка на игру [React-2048](https://shaimuratovaalina.github.io/Development-of-the-browser-game-2048-using-React/) 
+Try online demo [here](https://kwrush.github.io/react-2048/)
 
+### Getting Started
 
-Реализация React в версии [2048](https://github.com/gabrielecirulli/2048) built with [Typescript](https://www.typescriptlang.org/) and  [styled-components](https://styled-components.com)
+```shell
+$ npm install
+$ npm start
+# open http://localhost:3000
+```
 
+### Liscense
 
-
-### Пошаговая инструкция по установке и запуску проекта:
-git clone https://github.com/Shaimuratovaalina/Development-of-the-browser-game-2048-using-React.git 
-cd Development-of-the-browser-game-2048-using-React
-npm install
-npm start
-
-
-
-# open 
-➜  Local:   http://localhost:3001/      
-
-➜  Network: http://192.168.1.104:3001/ 
-
-
-
-### Liscense : MIT
+MIT
