@@ -19,8 +19,8 @@ npm start
 
 
 # open 
-  ➜  Local:   http://localhost:3001/browser-game-2048-react/
-  ➜  Network: http://192.168.1.104:3001/browser-game-2048-react/     
+   Local:   http://localhost:3001/    
+   Network: http://192.168.1.104:3001/   
 
 
 
