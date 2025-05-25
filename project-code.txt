@@ -1,0 +1,420 @@
+
+
+📄 src\App.tsx
+import React, { useCallback, useEffect, useState } from 'react';
+import { ThemeProvider } from 'styled-components';
+
+// Компоненты
+import AboutModal from './components/AboutModal';
+import Box from './components/Box';
+import Button from './components/Button';
+import Control from './components/Control/Control';
+import GameBoard from './components/GameBoard';
+import GlobalStyle from './components/GlobalStyle';
+import HowToPlayModal from './components/HowToPlayModal';
+import ScoreBoard from './components/ScoreBoard';
+import SettingsModal from './components/SettingsModal';
+import Text from './components/Text';
+import Timer from './components/Timer'; // Если у тебя есть таймер
+
+// Хуки
+import useGameBoard from './hooks/useGameBoard';
+import useGameScore from './hooks/useGameScore';
+import useGameState, { GameStatus } from './hooks/useGameState';
+import useLocalStorage from './hooks/useLocalStorage';
+import useScaleControl from './hooks/useScaleControl';
+import useTheme from './hooks/useTheme';
+import { useTimer } from './hooks/useTimer';
+
+// Утилиты
+import { GRID_SIZE, MIN_SCALE, SPACING } from './utils/constants';
+
+// Типы
+import { ThemeName } from './themes/types';
+
+export type Configuration = {
+  theme: ThemeName;
+  bestScore: number;
+  rows: number;
+  cols: number;
+};
+
+// Название приложения для localStorage
+export const APP_NAME = 'react-2048';
+
+const App: React.FC = () => {
+  // Состояние игры
+  const [gameState, setGameStatus] = useGameState({
+    status: 'running',
+    pause: false,
+  });
+
+  // Локальное хранилище
+  const [config, setConfig] = useLocalStorage<Configuration>(APP_NAME, {
+    theme: 'default',
+    bestScore: 0,
+    rows: MIN_SCALE,
+    cols: MIN_SCALE,
+  });
+
+  // Тема
+  const [{ name: themeName, value: themeValue }, setTheme] = useTheme(config.theme);
+
+  // Размер поля
+  const [rows, setRows] = useScaleControl(config.rows);
+  const [cols, setCols] = useScaleControl(config.cols);
+
+  // Управление счетом
+  const { total, best, addScore, setTotal } = useGameScore(config.bestScore);
+
+  // Таймер
+  const [isGameRunning, setIsGameRunning] = useState(true);
+  const { formattedTime, resetTimer } = useTimer(isGameRunning);
+
+  // Игровое поле
+  const { tiles, onMove, onMovePending, onMergePending, undoMove } = useGameBoard({
+    rows,
+    cols,
+    gameState,
+    addScore,
+  });
+
+  // Сброс таймера при перезапуске
+  useEffect(() => {
+    if (gameState.status === 'restart') {
+      resetTimer();
+      setIsGameRunning(true);
+    }
+  }, [gameState.status, resetTimer]);
+
+  // Остановка таймера при победе или проигрыше
+  useEffect(() => {
+    if (gameState.status === 'win' || gameState.status === 'lost') {
+      setIsGameRunning(false);
+    }
+  }, [gameState.status]);
+
+  // Сброс игры
+  const onResetGame = useCallback(() => {
+    setTotal(0);
+    setGameStatus('restart');
+  }, [setTotal, setGameStatus]);
+
+  // Закрытие уведомлений
+  const onCloseNotification = useCallback(
+    (currentStatus: GameStatus) => {
+      setGameStatus(currentStatus === 'win' ? 'continue' : 'restart');
+    },
+    [setGameStatus]
+  );
+
+  // Модальные окна
+  const [showAbout, setShowAbout] = useState(false);
+  const [showHowToPlay, setShowHowToPlay] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+
+  // Сохранение конфигурации в localStorage
+  useEffect(() => {
+    setConfig({ rows, cols, bestScore: best, theme: themeName });
+  }, [rows, cols, best, themeName, setConfig]);
+
+  return (
+    <ThemeProvider theme={themeValue}>
+      <>
+        <GlobalStyle />
+        <Box
+          justifyContent="center"
+          inlineSize="100%"
+          blockSize="100%"
+          alignItems="start"
+          borderRadius={0}
+        >
+          {/* Левая панель — управление размерами сетки */}
+          <Box
+            flexDirection="column"
+            marginInlineEnd="s6"
+            style={{
+              minWidth: '180px',
+              padding: '16px',
+              backgroundColor: themeValue.palette.background,
+              borderRadius: '12px',
+              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
+            }}
+          >
+            <Box flexDirection="column" marginBlockEnd="s4">
+              <Text fontSize={20} fontWeight="bold" color="primary">
+                Размер сетки
+                </Text>
+                </Box>
+            <Control
+              rows={rows}
+              cols={cols}
+              onChangeRow={setRows}
+              onChangeCol={setCols}
+            />
+          </Box>
+
+          {/* Центральная часть — игра */}
+          <Box
+            justifyContent="center"
+            flexDirection="column"
+            inlineSize={`${GRID_SIZE}px`}
+          >
+            {/* Заголовок и счётчики */}
+            <Box inlineSize="100%" justifyContent="space-between" marginBlockStart="s2">
+              <Box>
+                <Text fontSize={64} fontWeight="bold" color="primary">2048</Text>
+              </Box>
+              <Box justifyContent="center">
+                <ScoreBoard total={total} title="Текущий счёт" />
+                <ScoreBoard total={best} title="Лучший счёт" />
+                <Timer time={formattedTime} /> {/* Время игры */}
+              </Box>
+            </Box>
+
+            {/* Игровое поле */}
+            <GameBoard
+              tiles={tiles}
+              boardSize={GRID_SIZE}
+              rows={rows}
+              cols={cols}
+              spacing={SPACING}
+              gameStatus={gameState.status}
+              onMove={onMove}
+              onMovePending={onMovePending}
+              onMergePending={onMergePending}
+              onCloseNotification={onCloseNotification}
+            />
+
+            {/* Подсказка */}
+            <Box marginBlock="s4" justifyContent="center" flexDirection="column">
+              <Text fontSize={16} as="p" color="primary">
+                ✨ Соединяйте плитки с одинаковыми числами
+              </Text>
+              <Text fontSize={16} as="p" color="primary">
+                ⏳ Используйте стрелки или свайпы
+              </Text>
+            </Box>
+          </Box>
+
+          {/* Правая панель — кнопки управления */}
+          <Box
+            flexDirection="column"
+            marginInlineStart="s6"
+            justifyContent="start"
+            style={{
+              minWidth: '180px',
+              padding: '16px',
+              backgroundColor: themeValue.palette.background,
+              borderRadius: '12px',
+              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
+            }}
+          >
+            <Button onClick={onResetGame} style={{ marginBottom: '16px' }}>
+              <Text fontSize={20} textTransform="capitalize">🔄 Новая игра</Text>
+            </Button>
+
+            <Button onClick={undoMove} style={{ marginBottom: '16px' }}>
+              <Text fontSize={20} textTransform="capitalize">↩ Отменить ход</Text>
+            </Button>
+
+            <Button onClick={() => setShowSettings(true)}>
+              <Text fontSize={20} textTransform="capitalize">⚙ Настройки</Text>
+            </Button>
+          </Box>
+        </Box>
+
+        {/* Модальные окна */}
+        {showAbout && (
+          <AboutModal isOpen={showAbout} onClose={() => setShowAbout(false)} />
+        )}
+        {showHowToPlay && (
+          <HowToPlayModal
+            isOpen={showHowToPlay}
+            onClose={() => setShowHowToPlay(false)}
+          />
+        )}
+        {showSettings && (
+          <SettingsModal
+            isOpen={showSettings}
+            onClose={() => setShowSettings(false)}
+            themeName={themeName}
+            setTheme={setTheme}
+          />
+        )}
+      </>
+    </ThemeProvider>
+  );
+};
+
+export default App;
+
+📁 src\components
+const fs = require('fs');
+const path = require('path');
+
+const folderPath = 'src'; // Папка с кодом
+const outputFilePath = 'project-code.txt';
+
+function readAllFiles(folder) {
+  let result = '';
+
+  const files = fs.readdirSync(folder);
+
+  for (const file of files) {
+    const fullPath = path.join(folder, file);
+    if (fs.statSync(fullPath).isDirectory()) {
+      result += `\n\n📁 ${fullPath}\n`;
+      result += fs.readFileSync(__filename, 'utf-8'); // Для теста
+    } else {
+      const content = fs.readFileSync(fullPath, 'utf-8');
+      result += `\n\n📄 ${fullPath}\n`;
+      result += content;
+    }
+  }
+
+  return result;
+}
+
+fs.writeFileSync(outputFilePath, readAllFiles(folderPath));
+
+console.log('Готово! Код сохранён в project-code.txt');
+
+📁 src\hooks
+const fs = require('fs');
+const path = require('path');
+
+const folderPath = 'src'; // Папка с кодом
+const outputFilePath = 'project-code.txt';
+
+function readAllFiles(folder) {
+  let result = '';
+
+  const files = fs.readdirSync(folder);
+
+  for (const file of files) {
+    const fullPath = path.join(folder, file);
+    if (fs.statSync(fullPath).isDirectory()) {
+      result += `\n\n📁 ${fullPath}\n`;
+      result += fs.readFileSync(__filename, 'utf-8'); // Для теста
+    } else {
+      const content = fs.readFileSync(fullPath, 'utf-8');
+      result += `\n\n📄 ${fullPath}\n`;
+      result += content;
+    }
+  }
+
+  return result;
+}
+
+fs.writeFileSync(outputFilePath, readAllFiles(folderPath));
+
+console.log('Готово! Код сохранён в project-code.txt');
+
+📄 src\index.tsx
+import { createRoot } from 'react-dom/client';
+import App from './App';
+import GlobalStyle from './components/GlobalStyle';
+
+const container = document.getElementById('game') as HTMLElement;
+const root = createRoot(container);
+root.render(
+  <>
+    <GlobalStyle />
+    <App />
+  </>,
+);
+
+
+📁 src\themes
+const fs = require('fs');
+const path = require('path');
+
+const folderPath = 'src'; // Папка с кодом
+const outputFilePath = 'project-code.txt';
+
+function readAllFiles(folder) {
+  let result = '';
+
+  const files = fs.readdirSync(folder);
+
+  for (const file of files) {
+    const fullPath = path.join(folder, file);
+    if (fs.statSync(fullPath).isDirectory()) {
+      result += `\n\n📁 ${fullPath}\n`;
+      result += fs.readFileSync(__filename, 'utf-8'); // Для теста
+    } else {
+      const content = fs.readFileSync(fullPath, 'utf-8');
+      result += `\n\n📄 ${fullPath}\n`;
+      result += content;
+    }
+  }
+
+  return result;
+}
+
+fs.writeFileSync(outputFilePath, readAllFiles(folderPath));
+
+console.log('Готово! Код сохранён в project-code.txt');
+
+📁 src\types
+const fs = require('fs');
+const path = require('path');
+
+const folderPath = 'src'; // Папка с кодом
+const outputFilePath = 'project-code.txt';
+
+function readAllFiles(folder) {
+  let result = '';
+
+  const files = fs.readdirSync(folder);
+
+  for (const file of files) {
+    const fullPath = path.join(folder, file);
+    if (fs.statSync(fullPath).isDirectory()) {
+      result += `\n\n📁 ${fullPath}\n`;
+      result += fs.readFileSync(__filename, 'utf-8'); // Для теста
+    } else {
+      const content = fs.readFileSync(fullPath, 'utf-8');
+      result += `\n\n📄 ${fullPath}\n`;
+      result += content;
+    }
+  }
+
+  return result;
+}
+
+fs.writeFileSync(outputFilePath, readAllFiles(folderPath));
+
+console.log('Готово! Код сохранён в project-code.txt');
+
+📁 src\utils
+const fs = require('fs');
+const path = require('path');
+
+const folderPath = 'src'; // Папка с кодом
+const outputFilePath = 'project-code.txt';
+
+function readAllFiles(folder) {
+  let result = '';
+
+  const files = fs.readdirSync(folder);
+
+  for (const file of files) {
+    const fullPath = path.join(folder, file);
+    if (fs.statSync(fullPath).isDirectory()) {
+      result += `\n\n📁 ${fullPath}\n`;
+      result += fs.readFileSync(__filename, 'utf-8'); // Для теста
+    } else {
+      const content = fs.readFileSync(fullPath, 'utf-8');
+      result += `\n\n📄 ${fullPath}\n`;
+      result += content;
+    }
+  }
+
+  return result;
+}
+
+fs.writeFileSync(outputFilePath, readAllFiles(folderPath));
+
+console.log('Готово! Код сохранён в project-code.txt');
